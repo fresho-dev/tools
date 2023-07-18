@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="en">
+
+<head>
+  <!-- HTML metadata -->
+  <meta charset="UTF-8" />
+  <title>Fresho Tools</title>
+  <meta name="description" content="Fresho Tools" />
+  <link rel="icon" type="image/png" href="../static/logo-72x72.png" />
+  <link rel="manifest" href="../manifest.webmanifest" />
+
+  <!-- Social media preview images -->
+  <meta property="og:image" content="../static/logo-512x512.png">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="512">
+  <meta property="og:image:height" content="512">
+
+  <!-- Add to homescreen for Safari on iOS -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <meta name="apple-mobile-web-app-title" content="Audience Tester | Fresho Tools" />
+
+  <!-- Homescreen icons -->
+  <link rel="apple-touch-icon" href="../static/logo-72x72.png" />
+  <link rel="apple-touch-icon" sizes="72x72" href="../static/logo-72x72.png" />
+  <link rel="apple-touch-icon" sizes="128x128" href="../static/logo-128x128.png" />
+  <link rel="apple-touch-icon" sizes="512x512" href="../static/logo-512x512.png" />
+
+  <!-- Other PWA stuff -->
+  <meta name="theme-color" content="#000000">
+
+  <!-- Capabilities-related metadata -->
+  <meta name="viewport" content="width=device-width,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+
+  <!-- Third party imports -->
+  <script src="https://unpkg.com/petite-vue"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css">
+
+  <!-- Service worker registration -->
+  <script>
+    navigator.serviceWorker.register('../js/sw.js').then(event => {
+      console.log('ServiceWorker registration successful:', event);
+    }, function (err) {
+      alert(`ServiceWorker registration failed: ${err}`);
+    });
+  </script>
+</head>
+
+<body v-scope @vue:mounted="mounted" class="h-full">
+
+  <!-- Page title and logo -->
+  <div class="flex flex-col items-center justify-center h-[64px] pt-[16px]">
+    <h1 class="font-light text-3xl">
+      Audience Tester - Fresho Tools
+    </h1>
+  </div>
+
+  <!-- Audience Details -->
+  <div class="flex flex-col items-center justify-center h-[calc(100%-80px)]">
+    <div class="w-3/4 max-w-md">
+      <form class="px-8 pt-6 pb-8 mb-4" onsubmit="event.preventDefault()">
+
+        <div class="mb-6">
+          <h3 class="text-xl">Audience Attributes</h3>
+          <div v-for="val in attributeChoices">
+            <label class="block w-full cursor-pointer">
+              <input type="checkbox" @change="updateList(attributeSelected, val, $event.target.checked)"
+                class="appearance-none h-3 w-3 border border-gray-400 rounded-sm checked:bg-gray-900 checked:border-transparent focus:outline-none cursor-pointer" />
+              <span class="text-md">{{ val }}</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="mb-6">
+          <h3 class="text-xl">Audience Interests</h3>
+          <div v-for="val in interestChoices">
+            <label class="block w-full cursor-pointer">
+              <input type="checkbox" @change="updateList(interestSelected, val, $event.target.checked)"
+                class="appearance-none h-3 w-3 border border-gray-400 rounded-sm checked:bg-gray-900 checked:border-transparent focus:outline-none cursor-pointer" />
+              <span class="text-md">{{ val }}</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="mb-6">
+          <label>
+            <h3 class="text-xl">Audience Location</h3>
+            <input
+              class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-900 leading-tight focus:outline-none focus:shadow-outline"
+              v-model:value="geolocation" type="text" required />
+          </label>
+        </div>
+
+        <div class="mb-6">
+          <label>
+            <h3 class="text-xl">Store URL</h3>
+            <input
+              class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-900 leading-tight focus:outline-none focus:shadow-outline"
+              v-model:value="store" type="text" required />
+          </label>
+        </div>
+
+        <div class="mb-0">
+          <input
+            class="bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            type="submit" @click="next()" value="Next" />
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+</body>
+
+<script type="module">
+
+  const workerRoot = 'https://functions.fresho.workers.dev';
+
+  window.app = PetiteVue.createApp({
+    store: 'https://fresho-dev.github.io/demo-decathlon/',
+    geolocation: null,
+    attributeChoices: [
+      'man',
+      'woman',
+      'young',
+      'retired',
+    ],
+    interestChoices: [
+      'nature',
+      'camping',
+      'cycling',
+      'hiking',
+      'walking',
+      'running',
+    ],
+    attributeSelected: [],
+    interestSelected: [],
+
+    async mounted() {
+      // Guess the user's location from IP address.
+      this.geolocation = await fetch(`${workerRoot}/local/info/place.json`)
+        .then(res => res.json())
+        .then(data => `${data.city}, ${data.region}`)
+    },
+
+    updateList(list, value, checked) {
+      if (checked) {
+        list.push(value);
+      } else {
+        list.splice(list.indexOf(value), 1);
+      }
+    },
+
+    sanitizeUrl(url) {
+      if (url?.indexOf('://') === -1) {
+        return new URL(`https://${url}`);
+      } else {
+        return new URL(url);
+      }
+    },
+
+    next() {
+      const url = this.sanitizeUrl(this.store);
+      url.searchParams.set('audience_geolocation', this.geolocation);
+      url.searchParams.set('audience_interests', this.interestSelected.join(','));
+      url.searchParams.set('audience_attributes', this.attributeSelected.join(','));
+      window.location = url;
+    },
+
+  }).mount();
+
+</script>
+
+</html>
