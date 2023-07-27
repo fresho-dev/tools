@@ -63,23 +63,13 @@
       <form class="px-8 pt-6 pb-8 mb-4" onsubmit="event.preventDefault()">
 
         <div class="mb-6">
-          <h3 class="text-xl">Audience Attributes</h3>
-          <div v-for="val in attributeChoices">
+          <h3 class="text-xl">Audience Segments</h3>
+          <div v-for="val in audienceSegments">
             <label class="block w-full cursor-pointer">
-              <input type="checkbox" @change="updateList(attributeSelected, val, $event.target.checked)"
+              <input type="checkbox" @change="updateList(audiencesSelected, val, $event.target.checked)"
                 class="appearance-none h-3 w-3 border border-gray-400 rounded-sm checked:bg-gray-900 checked:border-transparent focus:outline-none cursor-pointer" />
-              <span class="text-md">{{ val }}</span>
-            </label>
-          </div>
-        </div>
-
-        <div class="mb-6">
-          <h3 class="text-xl">Audience Interests</h3>
-          <div v-for="val in interestChoices">
-            <label class="block w-full cursor-pointer">
-              <input type="checkbox" @change="updateList(interestSelected, val, $event.target.checked)"
-                class="appearance-none h-3 w-3 border border-gray-400 rounded-sm checked:bg-gray-900 checked:border-transparent focus:outline-none cursor-pointer" />
-              <span class="text-md">{{ val }}</span>
+              <span class="text-md">{{ val.parameter }}</span>
+              <span class="text-sm">{{ val.description }}</span>
             </label>
           </div>
         </div>
@@ -95,10 +85,10 @@
 
         <div class="mb-6">
           <label>
-            <h3 class="text-xl">Store URL</h3>
+            <h3 class="text-xl">Store UUID</h3>
             <input
               class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-900 leading-tight focus:outline-none focus:shadow-outline"
-              v-model:value="store" type="text" required />
+              v-model:value="uuid" type="text" required />
           </label>
         </div>
 
@@ -114,35 +104,31 @@
 
 </body>
 
-<script type="module">
+<script type="module" async>
 
   const workerRoot = 'https://functions.fresho.workers.dev';
 
-  window.app = PetiteVue.createApp({
-    store: 'https://fresho-dev.github.io/demo-decathlon/',
+  const vm = PetiteVue.createApp({
+    uuid: '',
     geolocation: null,
-    attributeChoices: [
-      'man',
-      'woman',
-      'young',
-      'retired',
-    ],
-    interestChoices: [
-      'nature',
-      'camping',
-      'cycling',
-      'hiking',
-      'walking',
-      'running',
-    ],
-    attributeSelected: [],
-    interestSelected: [],
+    audienceSegments: [],
+    audiencesSelected: [],
 
     async mounted() {
       // Guess the user's location from IP address.
       this.geolocation = await fetch(`${workerRoot}/local/info/place.json`)
         .then(res => res.json())
-        .then(data => `${data.city}, ${data.region}`)
+        .then(data => `${data.city}, ${data.region}`);
+
+      // Get the store data from the server.
+      this.uuid = new URL(window.location.href).searchParams.get('uuid');
+      const storefrontUrl = new URL(`${workerRoot}/merchant/storefront/data.json`);
+      storefrontUrl.searchParams.set('uuid', this.uuid);
+      storefrontUrl.searchParams.set('fieldnames', ['audiences'].join(','));
+      const data = await fetch(storefrontUrl).then(res => res.json());
+      this.audienceSegments = data.audiences;
+      console.log(data);
+
     },
 
     updateList(list, value, checked) {
@@ -150,14 +136,6 @@
         list.push(value);
       } else {
         list.splice(list.indexOf(value), 1);
-      }
-    },
-
-    sanitizeUrl(url) {
-      if (url?.indexOf('://') === -1) {
-        return new URL(`https://${url}`);
-      } else {
-        return new URL(url);
       }
     },
 
@@ -170,6 +148,7 @@
     },
 
   }).mount();
+
 
 </script>
 
