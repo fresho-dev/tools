@@ -150,9 +150,8 @@
 
     next() {
       const url = this.sanitizeUrl(this.store);
-      url.searchParams.set('audience_geolocation', this.geolocation);
-      url.searchParams.set('audience_interests', this.interestSelected.join(','));
-      url.searchParams.set('audience_attributes', this.attributeSelected.join(','));
+      url.searchParams.set('fresho_audience_geolocation', this.geolocation);
+      url.searchParams.set('fresho_audience_segments', this.audiencesSelected.join(','));
       window.location = url;
     },
 
