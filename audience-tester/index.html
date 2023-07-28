@@ -124,9 +124,10 @@
       this.uuid = new URL(window.location.href).searchParams.get('uuid');
       const storefrontUrl = new URL(`${workerRoot}/merchant/storefront/data.json`);
       storefrontUrl.searchParams.set('uuid', this.uuid);
-      storefrontUrl.searchParams.set('fieldnames', ['audiences'].join(','));
+      storefrontUrl.searchParams.set('fieldnames', ['audiences', 'store'].join(','));
       const data = await fetch(storefrontUrl).then(res => res.json());
       this.audienceSegments = data.audiences;
+      this.store = data.store;
       console.log(data);
 
     },
@@ -136,6 +137,14 @@
         list.push(value);
       } else {
         list.splice(list.indexOf(value), 1);
+      }
+    },
+
+    sanitizeUrl(url) {
+      if (url?.indexOf('://') === -1) {
+        return new URL(`https://${url}`);
+      } else {
+        return new URL(url);
       }
     },
 
