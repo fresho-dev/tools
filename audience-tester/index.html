@@ -79,7 +79,7 @@
             <h3 class="text-xl">Audience Location</h3>
             <input
               class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-900 leading-tight focus:outline-none focus:shadow-outline"
-              v-model:value="geolocation" type="text" required />
+              v-model:value="geolocation" type="text" />
           </label>
         </div>
 
@@ -119,7 +119,7 @@
       // Guess the user's location from IP address.
       this.geolocation = await fetch(`${workerRoot}/local/info/place.json`)
         .then(res => res.json())
-        .then(data => `${data.city}, ${data.region}`);
+        .then(data => data.city && data.region ? `${data.city}, ${data.region}` : null);
 
       // Get the store data from the server.
       this.uuid = new URL(window.location.href).searchParams.get('uuid');
