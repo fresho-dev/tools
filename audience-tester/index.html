@@ -107,6 +107,7 @@
 <script type="module" async>
 
   const workerRoot = 'https://functions.fresho.workers.dev';
+  const storefrontRoot = 'https://fresho-dev.github.io/storefront/';
 
   const vm = PetiteVue.createApp({
     uuid: '',
@@ -149,7 +150,8 @@
     },
 
     next() {
-      const url = this.sanitizeUrl(this.store);
+      const url = new URL(storefrontRoot);
+      url.searchParams.set('uuid', this.uuid);
       url.searchParams.set('fresho_audience_geolocation', this.geolocation);
       url.searchParams.set('fresho_audience_segments', this.audiencesSelected.join(','));
       window.location = url;
